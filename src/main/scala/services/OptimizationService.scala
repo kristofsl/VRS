@@ -34,7 +34,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
 
   override def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int): Task[Solution] =
     for
-      startTime:LocalDateTime <- ZIO.succeed(LocalDateTime.now)
+      startTime: LocalDateTime <- ZIO.succeed(LocalDateTime.now)
       loader <- ZIO.attempt(Loader.loadNativeLibraries())
       manager <- ZIO.attempt(new RoutingIndexManager(input.fullMatrix.length, vehicleCount, input.depotIndex))
       model: RoutingModel <- ZIO.attempt(new RoutingModel(manager))
@@ -48,7 +48,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       ))
       // callback for the weight constraints per vehicle
       demandCallbackIndex: Int <- ZIO.attempt(model.registerUnaryTransitCallback((fromIndex: Long) => {
-        val fromNode = manager.indexToNode(fromIndex);
+        val fromNode = manager.indexToNode(fromIndex)
         input.dataMatrix.entities(fromNode).weightInGramConstraint
       }))
       // callback for the max stops per vehicle
@@ -76,9 +76,9 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
           collectSolutionForVehicle(vehicleIndex, input, model, manager, result)
         }
       }
-      endTime:LocalDateTime <- ZIO.succeed(LocalDateTime.now)
-      c <- ZIO.attempt{
-        if routes.filter(_.tour.length > 2).length < vehicleCount then
+      endTime: LocalDateTime <- ZIO.succeed(LocalDateTime.now)
+      c <- ZIO.attempt {
+        if routes.count(_.tour.length > 2) < vehicleCount then
           Some("Full capacity of vehicles is not needed in optimal solution. Try to downscale the fleet and compare the results")
         else
           None
@@ -86,14 +86,14 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       solution <- ZIO.succeed(
         Solution(
           objectiveValue = objectiveValue,
-          vehicleCount = routes.filter(_.tour.length > 2).length,
+          vehicleCount = routes.count(_.tour.length > 2),
           maxKmVehicle = maxKmVehicle,
           routes = routes.toList,
           vehicleCapacity = vehicleCapacity,
           comment = c,
           durationMinutes = ChronoUnit.MINUTES.between(startTime, endTime)
         ))
-    yield (solution)
+    yield solution
 
 
   def collectSolutionForVehicle(vehicleIndex: Int, input: Input, routing: RoutingModel, manager: RoutingIndexManager, result: Assignment): Task[Route] =
@@ -103,7 +103,6 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
         val entities = ArrayBuffer[LocationEntity]()
         var index = routing.start(vehicleIndex)
         var routeDistanceMeters = 0L
-        var arrayBuffer = ArrayBuffer[Route]()
         while (!routing.isEnd(index)) {
           val indexStop = manager.indexToNode(index)
           val previousIndex = index
@@ -117,7 +116,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
         entities.addOne(input.dataMatrix.entities.filter(_.index == depotIndex).last)
         Route(vehicleId = vehicleIndex, distanceMeters = routeDistanceMeters, tour = entities.toList)
       }
-    yield (route)
+    yield route
 
 
 /** The companion object that creates the ZLayer */

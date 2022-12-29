@@ -53,5 +53,10 @@ object Utils:
   def validateInput(entities: List[LocationEntity]): Boolean =
     entities.length > 2
       && entities.exists(_.entityType == EntityType.Depot)
-      && entities.filter(l => l.entityType == EntityType.Depot).length == 1
+      && entities.count(l => l.entityType == EntityType.Depot) == 1
       && entities.filter(l => l.entityType == EntityType.Depot).last.weightInGramConstraint == 0
+      && !entities.map(_.location.longitude).exists(_ < -180)
+      && !entities.map(_.location.longitude).exists(_ > 180)
+      && !entities.map(_.location.latitude).exists(_ < -90)
+      && !entities.map(_.location.latitude).exists(_ > 90)
+

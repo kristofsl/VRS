@@ -24,8 +24,8 @@ trait DataStructureBuildService:
 case class DataStructureBuildServiceImpl(locationService: LocationService) extends DataStructureBuildService :
   override def build(entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
-      // build all needed relationships without including unneeded relationships that require no API calls
-      relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers and one depot is required"))
+    // build all needed relationships without including unneeded relationships that require no API calls
+      relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers and one depot is required and only valid latitude / longitudes are accepted"))
       // fetch all the results from the location service by calling the service with one origin and multiple destinations
       results: Iterable[Matrix] <- ZIO.foreach(relationships.keys) {
         (index: Int) => {
@@ -36,7 +36,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
       }
       // merge the results from multiple origins
       result: Matrix <- ZIO.succeed(results.fold(Matrix.createEmpty(entities))(Matrix.combine))
-    yield (result)
+    yield result
 
   def fetchDataForOrigin(originIndex: Int, destinationIndexList: List[Int], entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
@@ -48,11 +48,11 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
       destinationsGrouped: Iterator[List[LocationEntity]] <- ZIO.succeed(destinations.grouped(25))
       // call the location service API for each group
       results: Iterable[Matrix] <- ZIO.foreach(destinationsGrouped.toList) {
-        (group: List[LocationEntity]) => ZIO.logInfo(s"Calling the matrix API for origin index ${originIndex} and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
+        (group: List[LocationEntity]) => ZIO.logInfo(s"Calling the matrix API for origin index $originIndex and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
       }
       // merge the results from all the API calls
       result: Matrix <- ZIO.succeed(results.fold(Matrix.createEmpty(entities))(Matrix.combine))
-    yield (result)
+    yield result
 
   override def createInput(depotIndex: Int, input: Matrix, dimension: Int): Task[Input] =
     for

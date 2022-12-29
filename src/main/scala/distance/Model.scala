@@ -3,7 +3,8 @@ package distance
 import util.JsonUtils
 import util.JsonUtils.JsMatrixResponse
 import zio.*
-import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
+import zio.json.*
+
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.{Duration, LocalDate, LocalDateTime}
@@ -11,7 +12,6 @@ import java.util.UUID
 import java.util.concurrent.TimeUnit
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-import zio.json.*
 
 object Model:
   case class InputException(msg: String) extends Exception :
@@ -22,7 +22,7 @@ object Model:
 
   case class LocationEntity(index: Int, location: GeoLocation, name: String, uid: String, entityType: EntityType, weightInGramConstraint: Long)
 
-  case class GeoLocation (latitude: Float, longitude: Float)
+  case class GeoLocation(latitude: Float, longitude: Float)
 
   case class LocationDifference(durationMinutes: Float, distanceKm: Float)
 
@@ -32,7 +32,7 @@ object Model:
 
   case class MatrixPosition(originIndex: Int, destinationIndex: Int, distanceMeters: Long, durationMinutes: Long)
 
-  case class Solution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[Route], vehicleCapacity: List[Long], comment: Option[String], durationMinutes:Long):
+  case class Solution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[Route], vehicleCapacity: List[Long], comment: Option[String], durationMinutes: Long):
     override def toString: String =
       s"""
          |Summary solution:
@@ -47,7 +47,7 @@ object Model:
          |${routes.map(_.toString(vehicleCapacity))}
          |""".stripMargin
 
-    
+
   case class Route(vehicleId: Int, distanceMeters: Long, tour: List[LocationEntity]):
     def toString(vehicleCapacities: List[Long]): String =
       s"""
@@ -72,11 +72,11 @@ object Model:
          |${matrixElementToString(fullMatrix, 0, 0)}""".stripMargin
 
     def matrixElementToString(fullMatrix: Array[Array[Long]], row: Int, col: Int): String =
-      if (col < fullMatrix.length & row < fullMatrix.length) then
+      if col < fullMatrix.length & row < fullMatrix.length then
         val v = s"row $row and col $col : ${fullMatrix(row)(col)} \n"
         val next = v + matrixElementToString(fullMatrix, row, col + 1)
         next
-      else if (col == fullMatrix.length & row < fullMatrix.length) then
+      else if col == fullMatrix.length & row < fullMatrix.length then
         matrixElementToString(fullMatrix, row + 1, 0)
       else ""
 
