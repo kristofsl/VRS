@@ -17,14 +17,12 @@ import scala.collection.mutable.ArrayBuffer
 object Main extends ZIOAppDefault :
 
   //TODO validate geo location
-  //TODO validate the solution
   //TODO scan voor andere oplossingen
   //TODO add health check
-  //TODO JSON transforms
   //TODO Unit and other tests
 
   /* log settings */
-  override val bootstrap = SLF4J.slf4j(LogLevel.Info, LogFormat.colored)
+  override val bootstrap = SLF4J.slf4j(LogFormat.colored)
 
   /** Configuration */
   case class AppConfig(key: String)
@@ -37,33 +35,33 @@ object Main extends ZIOAppDefault :
         yield AppConfig(key = geoKey)
       }
 
-  def mainProgram(input:OptimizationInput): ZIO[AppConfig & LocationService & DataStructureBuildService & OptimizationService, Throwable, OptimalSolution] =
+  def mainProgram(userInput:OptimizationInput): ZIO[AppConfig & LocationService & DataStructureBuildService & OptimizationService, Throwable, OptimalSolution] =
     for
       _ <- ZIO.logInfo("Handling optimization request")
-      vehicleCapacities <- ZIO.attempt(input.vehicles)
+      vehicleCapacities <- ZIO.attempt(userInput.vehicles)
       locations         <- ZIO.attempt{
           val locations: ArrayBuffer[LocationEntity] = ArrayBuffer()
           // add the depot
           locations.addOne(
             LocationEntity(
               index = 0,
-              location = input.depotLocation.location,
-              name = input.depotLocation.name,
-              uid = input.depotLocation.uid,
+              location = userInput.depotLocation.location,
+              name = userInput.depotLocation.name,
+              uid = userInput.depotLocation.uid,
               entityType = EntityType.Depot,
               weightInGramConstraint = 0)
           )
           // add all the customers
-          for i <- input.locations.indices do {
-              locations.addAll(input.locations.map(l =>
+          for i <- userInput.locations.indices do {
+              locations.addOne(
                 LocationEntity(
                   index = i + 1,
-                  location = input.locations(i).location,
-                  name = input.locations(i).name,
-                  uid = input.locations(i).uid,
+                  location = userInput.locations(i).location,
+                  name = userInput.locations(i).name,
+                  uid = userInput.locations(i).uid,
                   entityType = EntityType.Customer,
-                  weightInGramConstraint = input.locations(i).weightInGramConstraint)
-              ))
+                  weightInGramConstraint = userInput.locations(i).weightInGramConstraint)
+              )
           }
           locations.toList
       }
@@ -76,8 +74,8 @@ object Main extends ZIOAppDefault :
         input,
         vehicleCapacities.length,
         vehicleCapacities.map(_.capacityInGrams),
-        200,
-        8)
+        userInput.maxKm.toInt,
+        userInput.maxCustomerStops.toInt + 1)
         .foldZIO(
           error => ZIO.logError(s"Optimization failed : $error.getMessage") *> ZIO.succeed(None),
           success => ZIO.logInfo(s"Solution found : ${success.toString}") *> ZIO.succeed(Some(success))
@@ -86,17 +84,20 @@ object Main extends ZIOAppDefault :
       result   <- ZIO.attempt(
         OptimalSolution(
           objectiveValue = solution.objectiveValue,
-          vehicleCount = solution.vehicleCount,
+          usedVehicleCount = solution.vehicleCount,
+          availableVehicleCount = solution.vehicleCapacity.length,
           maxKmVehicle = solution.maxKmVehicle,
+          maxCustomerStopCount = userInput.maxCustomerStops.toInt,
+          totalKm = (solution.routes.map(_.distanceMeters).sum / 1000).toInt,
           routes = solution.routes.map((r:Route) =>
             VehicleRoute(
               vehicleId = r.vehicleId,
-              distanceMeters = r.distanceMeters,
+              customerStopCount = r.tour.length - 2,
+              distanceKm = r.distanceMeters / 1000,
               tour = r.tour
-                .filter(_.entityType == EntityType.Customer)
                 .map(l => CustomerLocation(location = l.location, name = l.name, uid = l.uid, weightInGramConstraint = l.weightInGramConstraint))
-            )).filter(_.tour.length > 2),
-          vehicleCapacity = solution.vehicleCapacity,
+            )).filter(_.tour.length >= 3),
+          vehicleCapacity = solution.routes.map(r => VehicleDescription(r.vehicleId, solution.vehicleCapacity(r.vehicleId))),
           comment = solution.comment,
           durationMinutes = solution.durationMinutes)
         )
@@ -106,12 +107,13 @@ object Main extends ZIOAppDefault :
 
   // the HTTP input / output definitions and their JSON encoders / decoders
   case class Vehicle(capacityInGrams:Long)
-  case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxStops: Long, maxKm: Long)
+  case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long)
   case class OptimizationOutput(solution: Solution)
   case class CustomerLocation(location: GeoLocation, name: String, uid: String, weightInGramConstraint: Long)
   case class DepotLocation(location: GeoLocation, name: String, uid: String)
-  case class VehicleRoute(vehicleId: Int, distanceMeters: Long, tour: List[CustomerLocation])
-  case class OptimalSolution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[VehicleRoute], vehicleCapacity: List[Long], comment: Option[String], durationMinutes:Long)
+  case class VehicleRoute(vehicleId: Int, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation])
+  case class VehicleDescription(vehicleId: Int, capacityInGrams: Long)
+  case class OptimalSolution(objectiveValue: Long, usedVehicleCount: Int, totalKm: Int, availableVehicleCount: Int, maxKmVehicle: Int, maxCustomerStopCount: Int, routes: List[VehicleRoute], vehicleCapacity: List[VehicleDescription], comment: Option[String], durationMinutes:Long)
 
   given JsonDecoder[Vehicle] = DeriveJsonDecoder.gen[Vehicle]
   given JsonEncoder[Vehicle] = DeriveJsonEncoder.gen[Vehicle]
@@ -137,6 +139,8 @@ object Main extends ZIOAppDefault :
   given JsonDecoder[Solution] = DeriveJsonDecoder.gen[Solution]
   given JsonEncoder[OptimizationOutput] = DeriveJsonEncoder.gen[OptimizationOutput]
   given JsonDecoder[OptimizationOutput] = DeriveJsonDecoder.gen[OptimizationOutput]
+  given JsonEncoder[VehicleDescription] = DeriveJsonEncoder.gen[VehicleDescription]
+  given JsonDecoder[VehicleDescription] = DeriveJsonDecoder.gen[VehicleDescription]
 
   val app: Http[Any, Throwable, Request, Response] = Http.collectZIO[Request] {
     case req@Method.POST -> !! / "optimize" =>

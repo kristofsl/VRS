@@ -86,7 +86,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       solution <- ZIO.succeed(
         Solution(
           objectiveValue = objectiveValue,
-          vehicleCount = vehicleCount,
+          vehicleCount = routes.filter(_.tour.length > 2).length,
           maxKmVehicle = maxKmVehicle,
           routes = routes.toList,
           vehicleCapacity = vehicleCapacity,
