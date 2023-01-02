@@ -64,7 +64,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       searchParams <- ZIO.attempt(
         main.defaultRoutingSearchParameters()
           .toBuilder
-          .setTimeLimit(Duration.newBuilder().setSeconds(30000).build())
+          .setTimeLimit(Duration.newBuilder().setSeconds(60).build())
           .setFirstSolutionStrategy(FirstSolutionStrategy.Value.AUTOMATIC)
           .build
       )
@@ -98,7 +98,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
 
   def collectSolutionForVehicle(vehicleIndex: Int, input: Input, routing: RoutingModel, manager: RoutingIndexManager, result: Assignment): Task[Route] =
     for
-      _ <- ZIO.logInfo(s"Collecting the route for vehicle $vehicleIndex")
+      _ <- ZIO.logDebug(s"Collecting the route for vehicle $vehicleIndex")
       route <- ZIO.attempt {
         val entities = ArrayBuffer[LocationEntity]()
         var index = routing.start(vehicleIndex)

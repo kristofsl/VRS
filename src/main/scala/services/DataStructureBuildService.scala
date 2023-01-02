@@ -48,7 +48,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
       destinationsGrouped: Iterator[List[LocationEntity]] <- ZIO.succeed(destinations.grouped(25))
       // call the location service API for each group
       results: Iterable[Matrix] <- ZIO.foreach(destinationsGrouped.toList) {
-        (group: List[LocationEntity]) => ZIO.logInfo(s"Calling the matrix API for origin index $originIndex and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
+        (group: List[LocationEntity]) => ZIO.logDebug(s"Calling the matrix API for origin index $originIndex and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
       }
       // merge the results from all the API calls
       result: Matrix <- ZIO.succeed(results.fold(Matrix.createEmpty(entities))(Matrix.combine))

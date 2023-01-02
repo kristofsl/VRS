@@ -50,11 +50,11 @@ case class RadarLocationServiceImpl(appConfig: AppConfig) extends LocationServic
   override def matrixLookup(origin: LocationEntity, destinations: List[LocationEntity], allEntities: List[LocationEntity]): ZIO[AppConfig, Throwable, Matrix] =
     for
       url <- buildMapUrl(origins = List(origin.location), destinations = destinations.map(_.location))
-      _ <- ZIO.logInfo(s"URL build up : $url")
+      _ <- ZIO.logDebug(s"URL build up : $url")
       uri <- buildUri(url)
       request <- ZIO.attemptBlocking(HttpRequest.newBuilder(uri).version(HttpClient.Version.HTTP_2).GET().header("Authorization", appConfig.key).timeout(Duration.ofMinutes(5)).build())
       response: HttpResponse[String] <- ZIO.attemptBlocking(HttpClient.newBuilder().connectTimeout(Duration.ofMinutes(5)).build().send(request, HttpResponse.BodyHandlers.ofString()))
-      _ <- ZIO.logInfo(s"Radar API response with code ${response.statusCode} : ${response.body} ")
+      _ <- ZIO.logDebug(s"Radar API response with code ${response.statusCode} : ${response.body} ")
       jsonMatrix: JsMatrixResponse <- parseMatrixResponse(response.body)
       matrix: Matrix <- convert(jsonMatrix, origin, destinations, allEntities)
     yield matrix

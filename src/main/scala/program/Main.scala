@@ -7,8 +7,6 @@ import util.{MockUtils, Utils}
 import zhttp.http.*
 import zhttp.service.Server
 import zio.json.*
-import zio.logging.LogFormat
-import zio.logging.backend.SLF4J
 import zio.{Console, ExitCode, LogLevel, Scope, Task, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
 
 import java.util.UUID
@@ -17,7 +15,6 @@ import scala.collection.mutable.ArrayBuffer
 object Main extends ZIOAppDefault :
 
   /* log settings */
-  override val bootstrap = SLF4J.slf4j(LogLevel.Info, LogFormat.colored)
   val port: Int = 8080
   val app: Http[Any, Throwable, Request, Response] = Http.collectZIO[Request] {
     case req@Method.POST -> !! / "optimize" =>
@@ -44,6 +41,7 @@ object Main extends ZIOAppDefault :
                 DataStructureBuildServiceImpl.zLayer,
                 OrToolsOptimizationServiceImpl.zLayer)
       yield r
+    case req@Method.GET -> !! / "health" => ZIO.attempt(Response.status(Status.Ok))
   }
   val program: ZIO[Any, Throwable, ExitCode] = for {
     _ <- ZIO.logInfo(s"Booting server on http://localhost:$port")
@@ -52,7 +50,7 @@ object Main extends ZIOAppDefault :
 
   def mainProgram(userInput: OptimizationInput): ZIO[AppConfig & LocationService & DataStructureBuildService & OptimizationService, Throwable, OptimalSolution] =
     for
-      _ <- ZIO.logInfo("Handling optimization request")
+      _ <- ZIO.logDebug("Handling optimization request")
       vehicleCapacities <- ZIO.attempt(userInput.vehicles)
       locations <- ZIO.attempt {
         val locations: ArrayBuffer[LocationEntity] = ArrayBuffer()
@@ -106,6 +104,8 @@ object Main extends ZIOAppDefault :
           totalKm = (solution.routes.map(_.distanceMeters).sum / 1000).toInt,
           routes = solution.routes.map((r: Route) =>
             VehicleRoute(
+              totalWeightInGrams = r.tour.map(_.weightInGramConstraint).sum,
+              vehicleCapacityInGrams = solution.vehicleCapacity(r.vehicleId),
               vehicleId = r.vehicleId,
               customerStopCount = r.tour.length - 2,
               distanceKm = r.distanceMeters / 1000,
@@ -160,7 +160,7 @@ object Main extends ZIOAppDefault :
   case class OptimizationOutput(solution: Solution)
   case class CustomerLocation(location: GeoLocation, name: String, uid: String, weightInGramConstraint: Long)
   case class DepotLocation(location: GeoLocation, name: String, uid: String)
-  case class VehicleRoute(vehicleId: Int, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation])
+  case class VehicleRoute(vehicleId: Int, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation], totalWeightInGrams: Long, vehicleCapacityInGrams: Long)
   case class VehicleDescription(vehicleId: Int, capacityInGrams: Long)
   case class OptimalSolution(objectiveValue: Long, usedVehicleCount: Int, totalKm: Float, availableVehicleCount: Int, maxKmVehicle: Int, maxCustomerStopCount: Int, routes: List[VehicleRoute], vehicleCapacity: List[VehicleDescription], comment: Option[String], durationMinutes: Long)
 
