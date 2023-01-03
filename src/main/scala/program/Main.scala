@@ -12,9 +12,9 @@ import java.util.UUID
 import scala.collection.mutable.ArrayBuffer
 
 object Main extends ZIOAppDefault :
-
-  /* log settings */
+  
   val port: Int = 8080
+  
   val app: Http[Any, Throwable, Request, Response] = Http.collectZIO[Request] {
     case req@Method.POST -> !! / "optimize" =>
       for
@@ -90,7 +90,9 @@ object Main extends ZIOAppDefault :
         vehicleCapacities.length,
         vehicleCapacities.map(_.capacityInGrams),
         userInput.maxKm.toInt,
-        userInput.maxCustomerStops.toInt + 1)
+        userInput.maxCustomerStops.toInt + 1,
+        userInput.secondsOptimizationLimit
+        )
         .foldZIO(
           error => ZIO.logError(s"Optimization failed : $error.getMessage") *> ZIO.succeed(None),
           success => ZIO.logInfo(s"Solution found : ${success.toString}") *> ZIO.succeed(Some(success))
@@ -159,7 +161,7 @@ object Main extends ZIOAppDefault :
   // the HTTP input / output definitions
   case class Vehicle(capacityInGrams: Long)
   case class Problem(msg : String)
-  case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long)
+  case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long, secondsOptimizationLimit: Int)
   case class OptimizationOutput(solution: Solution)
   case class CustomerLocation(location: GeoLocation, name: String, uid: String, weightInGramConstraint: Long)
   case class DepotLocation(location: GeoLocation, name: String, uid: String)

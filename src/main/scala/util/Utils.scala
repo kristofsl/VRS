@@ -32,10 +32,6 @@ object Utils:
     }
     result.toList.groupBy(_.index1)
 
-  def validateSolution(solution: Solution): Boolean =
-    !solution.routes.map(_.distanceMeters * 1000).exists(_ > solution.maxKmVehicle)
-      && !solution.routes.exists(r => r.distanceMeters > solution.vehicleCapacity(r.vehicleId))
-
 
   def validateInput(entities: List[LocationEntity]): Boolean =
     entities.length > 2
@@ -46,4 +42,5 @@ object Utils:
       && !entities.map(_.location.longitude).exists(_ > 180)
       && !entities.map(_.location.latitude).exists(_ < -90)
       && !entities.map(_.location.latitude).exists(_ > 90)
+      && !entities.groupBy(_.uid).exists(_._2.length > 1)
 

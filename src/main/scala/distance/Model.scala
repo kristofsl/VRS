@@ -3,7 +3,6 @@ package distance
 import util.JsonUtils
 import zio.*
 import zio.json.*
-
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.{Duration, LocalDate, LocalDateTime}

@@ -16,7 +16,7 @@ import scala.collection.mutable.ArrayBuffer
 
 /** The trait description for the optimization services * */
 trait OptimizationService:
-  def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int): Task[Solution]
+  def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int,secondsOptimizationLimit: Int): Task[Solution]
 
 /** The implementation for the Google OR tools */
 case class OrToolsOptimizationServiceImpl() extends OptimizationService :
@@ -31,7 +31,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
   val CAPACITY = "Capacity"
   val STOPS = "Stops"
 
-  override def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int): Task[Solution] =
+  override def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int, secondsOptimizationLimit: Int): Task[Solution] =
     for
       startTime: LocalDateTime <- ZIO.succeed(LocalDateTime.now)
       loader <- ZIO.attempt(Loader.loadNativeLibraries())
@@ -63,7 +63,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       searchParams <- ZIO.attempt(
         main.defaultRoutingSearchParameters()
           .toBuilder
-          .setTimeLimit(Duration.newBuilder().setSeconds(60).build())
+          .setTimeLimit(Duration.newBuilder().setSeconds(secondsOptimizationLimit).build())
           .setFirstSolutionStrategy(FirstSolutionStrategy.Value.AUTOMATIC)
           .build
       )
@@ -126,4 +126,4 @@ object OrToolsOptimizationServiceImpl:
 
 /** The clean API object */
 object OptimizationService:
-  def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int) = ZIO.serviceWithZIO[OptimizationService](_.optimize(input, vehicleCount, vehicleCapacity, maxKmVehicle, stopCountLimit))
+  def optimize(input: Input, vehicleCount: Int, vehicleCapacity: List[Long], maxKmVehicle: Int, stopCountLimit: Int,secondsOptimizationLimit: Int) = ZIO.serviceWithZIO[OptimizationService](_.optimize(input, vehicleCount, vehicleCapacity, maxKmVehicle, stopCountLimit, secondsOptimizationLimit))

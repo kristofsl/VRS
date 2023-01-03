@@ -25,7 +25,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
   override def build(entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
     // build all needed relationships without including unneeded relationships that require no API calls
-      relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers and one depot is required and only valid latitude / longitudes are accepted"))
+      relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers,  one depot is required, only valid latitude / longitudes are accepted and uid should be unique"))
       // fetch all the results from the location service by calling the service with one origin and multiple destinations
       results: Iterable[Matrix] <- ZIO.foreach(relationships.keys) {
         (index: Int) => {
