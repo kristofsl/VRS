@@ -1,7 +1,6 @@
 package distance
 
 import util.JsonUtils
-import util.JsonUtils.JsMatrixResponse
 import zio.*
 import zio.json.*
 
@@ -19,6 +18,9 @@ object Model:
 
   case class OptimizationException(msg: String) extends Exception :
     override def getMessage: String = s"Optimization exception detected : $msg"
+
+  case class ExternalAPIException(msg: String ) extends Exception :
+    override def getMessage: String = s"External API exception detected : $msg"
 
   case class LocationEntity(index: Int, location: GeoLocation, name: String, uid: String, entityType: EntityType, weightInGramConstraint: Long)
 

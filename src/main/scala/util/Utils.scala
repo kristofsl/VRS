@@ -1,9 +1,7 @@
 package util
 
 import distance.Model.*
-import util.JsonUtils.JsMatrixResponse
 import zio.{Task, UIO, ZIO}
-
 import java.net.URI
 import scala.collection.mutable.ArrayBuffer
 
@@ -11,17 +9,6 @@ object Utils:
   def buildLocationString(location: GeoLocation): String = s"${location.latitude},${location.longitude}"
 
   def buildUri(url: String): Task[URI] = ZIO.attempt(URI(url))
-
-  def convert(jsonResponse: JsMatrixResponse, origin: LocationEntity, destinations: List[LocationEntity], allEntities: List[LocationEntity]): Task[Matrix] =
-    ZIO.attempt(Matrix(entities = allEntities,
-      results = jsonResponse.matrix.map(m =>
-        MatrixPosition(
-          originIndex = origin.index,
-          destinationIndex = findMatch(jsonResponse.destinations(m.destinationIndex).latitude, jsonResponse.destinations(m.destinationIndex).longitude, allEntities),
-          distanceMeters = m.distance.value.toLong,
-          durationMinutes = m.duration.value.toLong)
-      ))
-    )
 
   def findMatch(latitude: Float, longitude: Float, locations: List[LocationEntity]): Int =
     locations.filter(l => compare(l.location.longitude, longitude) && compare(l.location.latitude, latitude)).last.index

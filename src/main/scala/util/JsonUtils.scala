@@ -1,62 +1,47 @@
 package util
 
-import distance.Model.{GeoLocation, LocationEntity, Solution}
+import distance.Model.{ExternalAPIException, GeoLocation, LocationEntity, Solution, Matrix, MatrixPosition}
 import grapple.json.JsonParser
 import program.Main.{OptimizationInput, Vehicle}
 import zio.*
-
-import java.util.UUID
+import zio.json.*
+import java.util.{Date, UUID}
 
 object JsonUtils:
-  
-  def parseMatrixResponse(jsonInput: String): Task[JsMatrixResponse] =
-    ZIO.attempt {
-      import grapple.json.{*, given}
 
-      import scala.language.implicitConversions
+  // API specific model classes
+  case class DistanceData(meta: Meta, origins: List[Origin], destinations: List[Destination], matrix: List[List[MatrixEntry]])
+  case class Meta(code: Int)
+  case class Origin(latitude: Float, longitude: Float)
+  case class Destination(latitude: Float, longitude: Float)
+  case class MatrixEntry(distance: Distance, duration: Duration, originIndex: Int, destinationIndex: Int)
+  case class Distance(value: Float, text: String)
+  case class Duration(value: Float, text: String)
 
-      val json = Json.parse(jsonInput)
+  given JsonDecoder[DistanceData] = DeriveJsonDecoder.gen[DistanceData]
+  given JsonDecoder[Meta] = DeriveJsonDecoder.gen[Meta]
+  given JsonDecoder[Origin] = DeriveJsonDecoder.gen[Origin]
+  given JsonDecoder[Destination] = DeriveJsonDecoder.gen[Destination]
+  given JsonDecoder[MatrixEntry] = DeriveJsonDecoder.gen[MatrixEntry]
+  given JsonDecoder[Distance] = DeriveJsonDecoder.gen[Distance]
+  given JsonDecoder[Duration] = DeriveJsonDecoder.gen[Duration]
 
-      // parse the origins section
-      given jsonToOrigin: JsonInput[JsOrigin] with
-        override def read(value: JsonValue): JsOrigin = JsOrigin(value("latitude"), value("longitude"))
-
-      val origins: Seq[JsOrigin] = (json \ "origins").as[Seq[JsOrigin]]
-
-      // parse the destinations section
-      given jsonToDestination: JsonInput[JsDestination] with
-        override def read(value: JsonValue): JsDestination = JsDestination(value("latitude"), value("longitude"))
-
-      val destinations: Seq[JsDestination] = (json \ "destinations").as[Seq[JsDestination]]
-
-      // parse the matrix section
-      given jsonToDuration: JsonInput[JsDuration] with
-        override def read(value: JsonValue): JsDuration = JsDuration(value("value"), value("text"))
-
-      given jsonToDistance: JsonInput[JsDistance] with
-        override def read(value: JsonValue): JsDistance = JsDistance(value("value"), value("text"))
-
-      given jsonToMatrixPosition: JsonInput[JsMatrixPosition] with
-        override def read(value: JsonValue): JsMatrixPosition = JsMatrixPosition(originIndex = value("originIndex"), destinationIndex = value("destinationIndex"), distance = value("distance"), duration = value("duration"))
-
-      // parse the matrix
-      val matrix: Seq[Seq[JsMatrixPosition]] = (json \ "matrix").as[Seq[Seq[JsMatrixPosition]]]
-
-      JsMatrixResponse(origins = origins.toList, destinations = destinations.toList, matrix = matrix.flatten.toList)
-    }
-
-  case class JsOrigin(latitude: Float, longitude: Float)
-
-  case class JsDestination(latitude: Float, longitude: Float)
-
-  case class JsDistance(value: Float, text: String)
-
-  case class JsDuration(value: Float, text: String)
-
-  case class JsMatrixPosition(originIndex: Int, destinationIndex: Int, distance: JsDistance, duration: JsDuration)
-
-  case class JsMatrixResponse(origins: List[JsOrigin], destinations: List[JsDestination], matrix: List[JsMatrixPosition])
-
-
-
-
+  def parseMatrixResponse(jsonInput: String, origin: LocationEntity, destinations: List[LocationEntity], allEntities: List[LocationEntity]): Task[Matrix] =
+      for
+        backendData:DistanceData        <- ZIO.attempt{jsonInput.fromJson[DistanceData] match
+          case Left(e)  => throw ExternalAPIException(e)
+          case Right(v) => v
+        }
+        matrixEntries:List[MatrixEntry] <- ZIO.attempt(backendData.matrix.flatten)
+        results:List[MatrixPosition]    <- ZIO.attempt(matrixEntries.map((e:MatrixEntry) => MatrixPosition(
+          originIndex = origin.index,
+          destinationIndex = Utils.findMatch(
+            backendData.destinations(e.destinationIndex).latitude,
+            backendData.destinations(e.destinationIndex).longitude,
+            allEntities
+          ),
+          distanceMeters = e.distance.value.toLong,
+          durationMinutes = e.duration.value.toLong
+        )))
+        matrix <- ZIO.attempt(Matrix(allEntities,results))
+      yield matrix

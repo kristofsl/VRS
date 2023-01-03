@@ -8,7 +8,6 @@ import zhttp.http.*
 import zhttp.service.Server
 import zio.json.*
 import zio.{Console, ExitCode, LogLevel, Scope, Task, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
-
 import java.util.UUID
 import scala.collection.mutable.ArrayBuffer
 
@@ -33,6 +32,9 @@ object Main extends ZIOAppDefault :
                 case oe: OptimizationException =>
                   ZIO.logError(s"Returning optimization error as not found HTTP code : ${oe.msg}") *>
                     ZIO.succeed(Response.json(Problem(oe.msg).toJson).setStatus(Status.NotFound))
+                case ea: ExternalAPIException =>
+                  ZIO.logError(s"Returning external API error as failed dependecy HTTP code : ${ea.msg}") *>
+                    ZIO.succeed(Response.json(Problem(ea.msg).toJson).setStatus(Status.FailedDependency))
               }
               // provide all the live dependencies
               .provide(

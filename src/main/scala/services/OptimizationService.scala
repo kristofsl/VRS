@@ -4,7 +4,7 @@ import com.google.ortools.constraintsolver.RoutingIndexManager
 import distance.Model.*
 import program.Main.AppConfig
 import util.JsonUtils.*
-import util.Utils.{buildLocationString, buildUri, convert}
+import util.Utils.{buildLocationString, buildUri}
 import zio.*
 
 import java.net.http.*
