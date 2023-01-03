@@ -97,5 +97,3 @@ object Model:
 
   enum EntityType:
     case Customer, Depot
-
-

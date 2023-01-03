@@ -1,7 +1,6 @@
 package util
 
 import distance.Model.{ExternalAPIException, GeoLocation, LocationEntity, Solution, Matrix, MatrixPosition}
-import grapple.json.JsonParser
 import program.Main.{OptimizationInput, Vehicle}
 import zio.*
 import zio.json.*
