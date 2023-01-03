@@ -9,7 +9,6 @@ import zio.test.*
 object UtilsTesting extends ZIOSpecDefault {
 
   def spec = suite("ZIO utils testing suite")(
-
     suite("Utils")(
       test("build combinations one element") {
         assert(Utils.buildRelationShips(1))(Assertion.equalTo(

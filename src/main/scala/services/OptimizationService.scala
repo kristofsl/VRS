@@ -6,7 +6,6 @@ import program.Main.AppConfig
 import util.JsonUtils.*
 import util.Utils.{buildLocationString, buildUri}
 import zio.*
-
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.temporal.ChronoUnit

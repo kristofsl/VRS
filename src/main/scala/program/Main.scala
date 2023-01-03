@@ -3,7 +3,7 @@ package program
 import distance.Model.*
 import io.netty.handler.codec.json.JsonObjectDecoder
 import services.*
-import util.{MockUtils, Utils}
+import util.Utils
 import zhttp.http.*
 import zhttp.service.Server
 import zio.json.*
@@ -120,6 +120,7 @@ object Main extends ZIOAppDefault :
       )
     yield result
 
+  // JSON encoding / decoding for the REST API
   given JsonDecoder[Vehicle] = DeriveJsonDecoder.gen[Vehicle]
   given JsonEncoder[Vehicle] = DeriveJsonEncoder.gen[Vehicle]
   given JsonDecoder[VehicleRoute] = DeriveJsonDecoder.gen[VehicleRoute]
@@ -155,7 +156,7 @@ object Main extends ZIOAppDefault :
   /** Configuration */
   case class AppConfig(key: String)
 
-  // the HTTP input / output definitions and their JSON encoders / decoders
+  // the HTTP input / output definitions
   case class Vehicle(capacityInGrams: Long)
   case class Problem(msg : String)
   case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long)
