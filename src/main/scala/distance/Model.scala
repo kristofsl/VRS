@@ -32,41 +32,20 @@ object Model:
   case class Matrix(entities: List[LocationEntity], results: List[MatrixPosition])
 
   case class MatrixPosition(originIndex: Int, destinationIndex: Int, distanceMeters: Long, durationMinutes: Long)
+  
+  case class FleetEntity(driverName: String, vehicleIdentification: String, capacityInGrams: Long)
 
-  case class Solution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[Route], vehicleCapacity: List[Long], comment: Option[String], durationMinutes: Long):
-    override def toString: String =
-      s"""
-         |Summary solution:
-         |-----------------
-         |objective value               : $objectiveValue
-         |available vehicle count       : $vehicleCount
-         |used vehicle count            : ${routes.count(_.tour.length > 2)}
-         |total km                      : ${routes.map(_.distanceMeters).sum / 1000}
-         |max km by vehicle             : $maxKmVehicle
-         |optimization duration minutes : $durationMinutes
-         |comment                       : ${comment.getOrElse("/")}
-         |${routes.map(_.toString(vehicleCapacity))}
-         |""".stripMargin
+  case class Solution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[Route], fleet: List[FleetEntity], comment: Option[String], durationMinutes: Long)
 
+  case class Route(vehicleId: Int, distanceMeters: Long, tour: List[LocationEntity], fleetEntity: FleetEntity)
 
-  case class Route(vehicleId: Int, distanceMeters: Long, tour: List[LocationEntity]):
-    def toString(vehicleCapacities: List[Long]): String =
-      s"""
-         |Route summary:
-         |--------------
-         |vehicle id                 : $vehicleId
-         |vehicle max capacity kg    : ${vehicleCapacities(vehicleId) / 1000}
-         |distance route in km       : ${distanceMeters / 1000}
-         |total weight in kg         : ${tour.map(t => t.weightInGramConstraint).sum / 1000}
-         |tour description           : \n${tour.map(t => s"${t.index} - ${t.name} with ${t.weightInGramConstraint / 1000} kg weight").mkString(" \n--> ")}
-         |""".stripMargin
-
-  case class Input(fullMatrix: Array[Array[Long]], depotIndex: Int, dataMatrix: Matrix, demands: List[Float]):
+  case class Input(fullMatrix: Array[Array[Long]], depotIndex: Int, dataMatrix: Matrix, demands: List[Float], fleet: List[FleetEntity]):
     override def toString: String =
       s"""\n
          |Input summary : \n
          |---------------
          |depot index   : $depotIndex \n
+         |fleet         : ${fleet.mkString("-")}
          |entities      : \n
          |${entitiesToString(dataMatrix.entities)} \n
          |matrix        : \n

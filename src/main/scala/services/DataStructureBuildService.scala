@@ -2,6 +2,7 @@ package services
 
 import distance.Model.*
 import program.Main.AppConfig
+import program.Main.Vehicle
 import util.JsonUtils.*
 import util.Utils.{buildRelationShips, validateInput}
 import zio.*
@@ -18,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 trait DataStructureBuildService:
   def build(entities: List[LocationEntity]): ZIO[LocationService with AppConfig, Throwable, Matrix]
 
-  def createInput(depotIndex: Int, input: Matrix, dimension: Int): Task[Input]
+  def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]): Task[Input]
 
 /** The Live implementation */
 case class DataStructureBuildServiceImpl(locationService: LocationService) extends DataStructureBuildService :
@@ -54,7 +55,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
       result: Matrix <- ZIO.succeed(results.fold(Matrix.createEmpty(entities))(Matrix.combine))
     yield result
 
-  override def createInput(depotIndex: Int, input: Matrix, dimension: Int): Task[Input] =
+  override def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]): Task[Input] =
     for
     // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
       datamatrix: Array[Array[Long]] <- ZIO.succeed(Array.ofDim[Long](dimension, dimension))
@@ -66,7 +67,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
         }
         datamatrix
       }
-    yield (Input(fullMatrix = datamatrixFull, depotIndex = depotIndex, dataMatrix = input, demands = input.entities.map(_.weightInGramConstraint)))
+    yield (Input(fullMatrix = datamatrixFull, depotIndex = depotIndex, dataMatrix = input, demands = input.entities.map(_.weightInGramConstraint), fleet = vehicles.map(v => FleetEntity(v.driverName, v.vehicleIdentifier, v.capacityInGrams))))
 
 /** The companion object that creates the ZLayer */
 object DataStructureBuildServiceImpl:
@@ -82,4 +83,4 @@ object DataStructureBuildServiceImpl:
 object DataStructureBuildService:
   def build(entities: List[LocationEntity]) = ZIO.serviceWithZIO[DataStructureBuildService](_.build(entities))
 
-  def createInput(depotIndex: Int, input: Matrix, dimension: Int) = ZIO.serviceWithZIO[DataStructureBuildService](_.createInput(depotIndex, input, dimension))
+  def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]) = ZIO.serviceWithZIO[DataStructureBuildService](_.createInput(depotIndex, input, dimension, vehicles))

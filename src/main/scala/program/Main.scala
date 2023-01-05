@@ -53,7 +53,6 @@ object Main extends ZIOAppDefault :
   def mainProgram(userInput: OptimizationInput): ZIO[AppConfig & LocationService & DataStructureBuildService & OptimizationService, Throwable, OptimalSolution] =
     for
       _ <- ZIO.logDebug("Handling optimization request")
-      vehicleCapacities <- ZIO.attempt(userInput.vehicles)
       locations <- ZIO.attempt {
         val locations: ArrayBuffer[LocationEntity] = ArrayBuffer()
         // add the depot
@@ -83,40 +82,39 @@ object Main extends ZIOAppDefault :
       // build the matrix with all the API call results
       m: Matrix <- DataStructureBuildService.build(locations)
       // build an input for the optimization services
-      input <- DataStructureBuildService.createInput(0, m, locations.length)
+      input <- DataStructureBuildService.createInput(0, m, locations.length, userInput.vehicles)
       // optimize based on the input
       solutionOpt: Option[Solution] <- OptimizationService.optimize(
         input,
-        vehicleCapacities.length,
-        vehicleCapacities.map(_.capacityInGrams),
         userInput.maxKm.toInt,
         userInput.maxCustomerStops.toInt + 1,
         userInput.secondsOptimizationLimit
         )
         .foldZIO(
           error => ZIO.logError(s"Optimization failed : $error.getMessage") *> ZIO.succeed(None),
-          success => ZIO.logInfo(s"Solution found : ${success.toString}") *> ZIO.succeed(Some(success))
+          success => ZIO.logInfo(s"Solution found with objective value: ${success.objectiveValue}") *> ZIO.succeed(Some(success))
         )
       solution <- ZIO.getOrFailWith[OptimizationException, Solution](OptimizationException("No solution found"))(solutionOpt)
       result <- ZIO.attempt(
         OptimalSolution(
           objectiveValue = solution.objectiveValue,
           usedVehicleCount = solution.vehicleCount,
-          availableVehicleCount = solution.vehicleCapacity.length,
+          availableVehicleCount = solution.fleet.length,
           maxKmVehicle = solution.maxKmVehicle,
           maxCustomerStopCount = userInput.maxCustomerStops.toInt,
           totalKm = (solution.routes.map(_.distanceMeters).sum / 1000).toInt,
           routes = solution.routes.map((r: Route) =>
             VehicleRoute(
               totalWeightInGrams = r.tour.map(_.weightInGramConstraint).sum,
-              vehicleCapacityInGrams = solution.vehicleCapacity(r.vehicleId),
+              vehicleIdentifier = r.fleetEntity.vehicleIdentification,
+              driverName = r.fleetEntity.driverName,
+              vehicleCapacityInGrams = r.fleetEntity.capacityInGrams,
               vehicleId = r.vehicleId,
               customerStopCount = r.tour.length - 2,
               distanceKm = r.distanceMeters / 1000,
               tour = r.tour
                 .map(l => CustomerLocation(location = l.location, name = l.name, uid = l.uid, weightInGramConstraint = l.weightInGramConstraint))
             )).filter(_.tour.length >= 3),
-          vehicleCapacity = solution.routes.map(r => VehicleDescription(r.vehicleId, solution.vehicleCapacity(r.vehicleId))),
           comment = solution.comment,
           durationMinutes = solution.durationMinutes)
       )
@@ -143,12 +141,12 @@ object Main extends ZIOAppDefault :
   given JsonDecoder[EntityType] = DeriveJsonDecoder.gen[EntityType]
   given JsonEncoder[Route] = DeriveJsonEncoder.gen[Route]
   given JsonDecoder[Route] = DeriveJsonDecoder.gen[Route]
+  given JsonEncoder[FleetEntity] = DeriveJsonEncoder.gen[FleetEntity]
+  given JsonDecoder[FleetEntity] = DeriveJsonDecoder.gen[FleetEntity]
   given JsonEncoder[Solution] = DeriveJsonEncoder.gen[Solution]
   given JsonDecoder[Solution] = DeriveJsonDecoder.gen[Solution]
   given JsonEncoder[OptimizationOutput] = DeriveJsonEncoder.gen[OptimizationOutput]
   given JsonDecoder[OptimizationOutput] = DeriveJsonDecoder.gen[OptimizationOutput]
-  given JsonEncoder[VehicleDescription] = DeriveJsonEncoder.gen[VehicleDescription]
-  given JsonDecoder[VehicleDescription] = DeriveJsonDecoder.gen[VehicleDescription]
   given JsonEncoder[Problem] = DeriveJsonEncoder.gen[Problem]
   given JsonDecoder[Problem] = DeriveJsonDecoder.gen[Problem]
 
@@ -159,15 +157,14 @@ object Main extends ZIOAppDefault :
   case class AppConfig(key: String)
 
   // the HTTP input / output definitions
-  case class Vehicle(capacityInGrams: Long)
+  case class Vehicle(capacityInGrams: Long, driverName: String, vehicleIdentifier: String)
   case class Problem(msg : String)
   case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long, secondsOptimizationLimit: Int)
   case class OptimizationOutput(solution: Solution)
   case class CustomerLocation(location: GeoLocation, name: String, uid: String, weightInGramConstraint: Long)
   case class DepotLocation(location: GeoLocation, name: String, uid: String)
-  case class VehicleRoute(vehicleId: Int, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation], totalWeightInGrams: Long, vehicleCapacityInGrams: Long)
-  case class VehicleDescription(vehicleId: Int, capacityInGrams: Long)
-  case class OptimalSolution(objectiveValue: Long, usedVehicleCount: Int, totalKm: Float, availableVehicleCount: Int, maxKmVehicle: Int, maxCustomerStopCount: Int, routes: List[VehicleRoute], vehicleCapacity: List[VehicleDescription], comment: Option[String], durationMinutes: Long)
+  case class VehicleRoute(vehicleId: Int, vehicleIdentifier: String, driverName: String, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation], totalWeightInGrams: Long, vehicleCapacityInGrams: Long)
+  case class OptimalSolution(objectiveValue: Long, usedVehicleCount: Int, totalKm: Float, availableVehicleCount: Int, maxKmVehicle: Int, maxCustomerStopCount: Int, routes: List[VehicleRoute], comment: Option[String], durationMinutes: Long)
 
   object AppConfig:
     val zLayer: ZLayer[Any, Throwable, AppConfig] =
