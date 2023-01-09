@@ -43,4 +43,5 @@ object Utils:
       && !entities.map(_.location.latitude).exists(_ < -90)
       && !entities.map(_.location.latitude).exists(_ > 90)
       && !entities.groupBy(_.uid).exists(_._2.length > 1)
+      && !entities.groupBy(_.location).exists(_._2.length > 1)
 

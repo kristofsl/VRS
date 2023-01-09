@@ -73,36 +73,43 @@ object UtilsTesting extends ZIOSpecDefault {
       test("validate input - no depot / 3 customers") {
         assert(Utils.validateInput(List(
           LocationEntity(index = 0, location = GeoLocation(1f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 0),
-          LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 0),
-          LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Customer, weightInGramConstraint = 0),
+          LocationEntity(index = 1, location = GeoLocation(1.1,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 0),
+          LocationEntity(index = 2, location = GeoLocation(1.2,1f), name = "2", uid = "2", entityType = EntityType.Customer, weightInGramConstraint = 0),
         )))(Assertion.equalTo(false))
       },
       test("validate input - depot with invalid weight") {
         assert(Utils.validateInput(List(
           LocationEntity(index = 0, location = GeoLocation(1f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 0),
-          LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 0),
-          LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 1),
+          LocationEntity(index = 1, location = GeoLocation(1.1,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 0),
+          LocationEntity(index = 2, location = GeoLocation(1.2,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 1),
         )))(Assertion.equalTo(false))
       },
       test("validate input - basic valid input") {
         assert(Utils.validateInput(List(
           LocationEntity(index = 0, location = GeoLocation(1f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
+          LocationEntity(index = 1, location = GeoLocation(1.1,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
+          LocationEntity(index = 2, location = GeoLocation(1.2,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
         )))(Assertion.equalTo(true))
       },
       test("validate input - invalid geo location") {
         assert(Utils.validateInput(List(
           LocationEntity(index = 0, location = GeoLocation(-400f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
+          LocationEntity(index = 1, location = GeoLocation(1.1,1f), name = "1", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
+          LocationEntity(index = 2, location = GeoLocation(1.2,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
         )))(Assertion.equalTo(false))
       },
       test("validate input - duplicate uid") {
         assert(Utils.validateInput(List(
           LocationEntity(index = 0, location = GeoLocation(-400f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "0", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
-          LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
+          LocationEntity(index = 1, location = GeoLocation(1.1,1f), name = "0", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
+          LocationEntity(index = 2, location = GeoLocation(1.2,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
+        )))(Assertion.equalTo(false))
+      },
+      test("validate input - duplicate geo location") {
+        assert(Utils.validateInput(List(
+          LocationEntity(index = 0, location = GeoLocation(-400f,1f), name = "0", uid = "0", entityType = EntityType.Customer, weightInGramConstraint = 1),
+          LocationEntity(index = 1, location = GeoLocation(1.111112,1f), name = "0", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
+          LocationEntity(index = 2, location = GeoLocation(1.111113,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
         )))(Assertion.equalTo(false))
       }
     )
