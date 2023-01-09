@@ -104,7 +104,7 @@ object UtilsTesting extends ZIOSpecDefault {
           LocationEntity(index = 1, location = GeoLocation(1f,1f), name = "0", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
           LocationEntity(index = 2, location = GeoLocation(1f,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
         )))(Assertion.equalTo(false))
-      },
+      }
     )
   )
 }

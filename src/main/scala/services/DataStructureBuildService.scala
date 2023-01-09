@@ -6,7 +6,6 @@ import program.Main.Vehicle
 import util.JsonUtils.*
 import util.Utils.{buildRelationShips, validateInput}
 import zio.*
-
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.{Duration, LocalDate, LocalDateTime}
@@ -25,7 +24,7 @@ trait DataStructureBuildService:
 case class DataStructureBuildServiceImpl(locationService: LocationService) extends DataStructureBuildService :
   override def build(entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
-    // build all needed relationships without including unneeded relationships that require no API calls
+      // build all needed relationships without including unneeded relationships that require no API calls
       relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers,  one depot is required, only valid latitude / longitudes are accepted and uid should be unique"))
       // fetch all the results from the location service by calling the service with one origin and multiple destinations
       results: Iterable[Matrix] <- ZIO.foreach(relationships.keys) {
@@ -49,7 +48,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
       destinationsGrouped: Iterator[List[LocationEntity]] <- ZIO.succeed(destinations.grouped(25))
       // call the location service API for each group
       results: Iterable[Matrix] <- ZIO.foreach(destinationsGrouped.toList) {
-        (group: List[LocationEntity]) => ZIO.logDebug(s"Calling the matrix API for origin index $originIndex and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
+        (group: List[LocationEntity]) => ZIO.logInfo(s"Calling the matrix API for origin index $originIndex and destination indexes ${group.toString}") *> LocationService.matrixLookup(origin, group, entities)
       }
       // merge the results from all the API calls
       result: Matrix <- ZIO.succeed(results.fold(Matrix.createEmpty(entities))(Matrix.combine))

@@ -97,7 +97,6 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
 
   def collectSolutionForVehicle(vehicleIndex: Int, input: Input, routing: RoutingModel, manager: RoutingIndexManager, result: Assignment, fleet: List[FleetEntity]): Task[Route] =
     for
-      _ <- ZIO.logDebug(s"Collecting the route for vehicle $vehicleIndex")
       route <- ZIO.attempt {
         val entities = ArrayBuffer[LocationEntity]()
         var index = routing.start(vehicleIndex)
