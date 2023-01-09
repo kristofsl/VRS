@@ -1,11 +1,11 @@
 package services
 
 import distance.Model.*
-import program.Main.AppConfig
-import program.Main.Vehicle
+import program.Main.{AppConfig, Vehicle}
 import util.JsonUtils.*
-import util.Utils.{buildRelationShips, validateInput,validateInputMatrix}
+import util.Utils.{buildRelationShips, validateInput, validateInputMatrix}
 import zio.*
+
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.{Duration, LocalDate, LocalDateTime}
@@ -24,7 +24,7 @@ trait DataStructureBuildService:
 case class DataStructureBuildServiceImpl(locationService: LocationService) extends DataStructureBuildService :
   override def build(entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
-      // build all needed relationships without including unneeded relationships that require no API calls
+    // build all needed relationships without including unneeded relationships that require no API calls
       relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers,  one depot is required, only valid latitude / longitudes are accepted and uid should be unique"))
       // fetch all the results from the location service by calling the service with one origin and multiple destinations
       results: Iterable[Matrix] <- ZIO.foreach(relationships.keys) {
@@ -56,7 +56,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
 
   override def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]): Task[Input] =
     for
-      // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
+    // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
       datamatrix: Array[Array[Long]] <- ZIO.succeed(Array.ofDim[Long](dimension, dimension))
       datamatrixFull: Array[Array[Long]] <- ZIO.attempt {
         // fill the values and the opposite direction with the same value
@@ -64,10 +64,10 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
           datamatrix(mp.originIndex)(mp.destinationIndex) = mp.distanceMeters
           datamatrix(mp.destinationIndex)(mp.originIndex) = mp.distanceMeters
         }
-        assert(validateInputMatrix(datamatrix,0,0))
+        assert(validateInputMatrix(datamatrix, 0, 0))
         datamatrix
       }
-    yield (Input(fullMatrix = datamatrixFull, depotIndex = depotIndex, dataMatrix = input, demands = input.entities.map(_.weightInGramConstraint), fleet = vehicles.map(v => FleetEntity(v.driverName, v.vehicleIdentifier, v.capacityInGrams))))
+    yield Input(fullMatrix = datamatrixFull, depotIndex = depotIndex, dataMatrix = input, demands = input.entities.map(_.weightInGramConstraint), fleet = vehicles.map(v => FleetEntity(v.driverName, v.vehicleIdentifier, v.capacityInGrams)))
 
 /** The companion object that creates the ZLayer */
 object DataStructureBuildServiceImpl:

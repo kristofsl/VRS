@@ -8,13 +8,14 @@ import zhttp.http.*
 import zhttp.service.Server
 import zio.json.*
 import zio.{Console, ExitCode, LogLevel, Scope, Task, ZIO, ZIOAppArgs, ZIOAppDefault, ZLayer}
+
 import java.util.UUID
 import scala.collection.mutable.ArrayBuffer
 
 object Main extends ZIOAppDefault :
-  
+
   val port: Int = 8080
-  
+
   val app: Http[Any, Throwable, Request, Response] = Http.collectZIO[Request] {
     case req@Method.POST -> !! / "optimize" =>
       for
@@ -33,7 +34,7 @@ object Main extends ZIOAppDefault :
                   ZIO.logError(s"Returning optimization error as not found HTTP code : ${oe.msg}") *>
                     ZIO.succeed(Response.json(Problem(oe.msg).toJson).setStatus(Status.NotFound))
                 case ea: ExternalAPIException =>
-                  ZIO.logError(s"Returning external API error as failed dependecy HTTP code : ${ea.msg}") *>
+                  ZIO.logError(s"Returning external API error as failed dependency HTTP code : ${ea.msg}") *>
                     ZIO.succeed(Response.json(Problem(ea.msg).toJson).setStatus(Status.FailedDependency))
               }
               // provide all the live dependencies
@@ -89,7 +90,7 @@ object Main extends ZIOAppDefault :
         userInput.maxKm.toInt,
         userInput.maxCustomerStops.toInt + 1,
         userInput.secondsOptimizationLimit
-        )
+      )
         .foldZIO(
           error => ZIO.logError(s"Optimization failed : $error.getMessage") *> ZIO.succeed(None),
           success => ZIO.logInfo(s"Solution found with objective value: ${success.objectiveValue}") *> ZIO.succeed(Some(success))
@@ -122,32 +123,59 @@ object Main extends ZIOAppDefault :
 
   // JSON encoding / decoding for the REST API
   given JsonDecoder[Vehicle] = DeriveJsonDecoder.gen[Vehicle]
+
   given JsonEncoder[Vehicle] = DeriveJsonEncoder.gen[Vehicle]
+
   given JsonDecoder[VehicleRoute] = DeriveJsonDecoder.gen[VehicleRoute]
+
   given JsonEncoder[VehicleRoute] = DeriveJsonEncoder.gen[VehicleRoute]
+
   given JsonDecoder[OptimalSolution] = DeriveJsonDecoder.gen[OptimalSolution]
+
   given JsonEncoder[OptimalSolution] = DeriveJsonEncoder.gen[OptimalSolution]
+
   given JsonEncoder[GeoLocation] = DeriveJsonEncoder.gen[GeoLocation]
+
   given JsonDecoder[GeoLocation] = DeriveJsonDecoder.gen[GeoLocation]
+
   given JsonEncoder[LocationEntity] = DeriveJsonEncoder.gen[LocationEntity]
+
   given JsonDecoder[LocationEntity] = DeriveJsonDecoder.gen[LocationEntity]
+
   given JsonDecoder[CustomerLocation] = DeriveJsonDecoder.gen[CustomerLocation]
+
   given JsonEncoder[CustomerLocation] = DeriveJsonEncoder.gen[CustomerLocation]
+
   given JsonEncoder[DepotLocation] = DeriveJsonEncoder.gen[DepotLocation]
+
   given JsonDecoder[DepotLocation] = DeriveJsonDecoder.gen[DepotLocation]
+
   given JsonEncoder[OptimizationInput] = DeriveJsonEncoder.gen[OptimizationInput]
+
   given JsonDecoder[OptimizationInput] = DeriveJsonDecoder.gen[OptimizationInput]
+
   given JsonEncoder[EntityType] = DeriveJsonEncoder.gen[EntityType]
+
   given JsonDecoder[EntityType] = DeriveJsonDecoder.gen[EntityType]
+
   given JsonEncoder[Route] = DeriveJsonEncoder.gen[Route]
+
   given JsonDecoder[Route] = DeriveJsonDecoder.gen[Route]
+
   given JsonEncoder[FleetEntity] = DeriveJsonEncoder.gen[FleetEntity]
+
   given JsonDecoder[FleetEntity] = DeriveJsonDecoder.gen[FleetEntity]
+
   given JsonEncoder[Solution] = DeriveJsonEncoder.gen[Solution]
+
   given JsonDecoder[Solution] = DeriveJsonDecoder.gen[Solution]
+
   given JsonEncoder[OptimizationOutput] = DeriveJsonEncoder.gen[OptimizationOutput]
+
   given JsonDecoder[OptimizationOutput] = DeriveJsonDecoder.gen[OptimizationOutput]
+
   given JsonEncoder[Problem] = DeriveJsonEncoder.gen[Problem]
+
   given JsonDecoder[Problem] = DeriveJsonDecoder.gen[Problem]
 
   override def run: ZIO[Any with ZIOAppArgs with Scope, Any, Any] =
@@ -158,12 +186,19 @@ object Main extends ZIOAppDefault :
 
   // the HTTP input / output definitions
   case class Vehicle(capacityInGrams: Long, driverName: String, vehicleIdentifier: String)
-  case class Problem(msg : String)
+
+  case class Problem(msg: String)
+
   case class OptimizationInput(locations: List[CustomerLocation], depotLocation: DepotLocation, vehicles: List[Vehicle], maxCustomerStops: Long, maxKm: Long, secondsOptimizationLimit: Int)
+
   case class OptimizationOutput(solution: Solution)
+
   case class CustomerLocation(location: GeoLocation, name: String, uid: String, weightInGramConstraint: Long)
+
   case class DepotLocation(location: GeoLocation, name: String, uid: String)
+
   case class VehicleRoute(vehicleId: Int, vehicleIdentifier: String, driverName: String, distanceKm: Float, customerStopCount: Int, tour: List[CustomerLocation], totalWeightInGrams: Long, vehicleCapacityInGrams: Long)
+
   case class OptimalSolution(objectiveValue: Long, usedVehicleCount: Int, totalKm: Float, availableVehicleCount: Int, maxKmVehicle: Int, maxCustomerStopCount: Int, routes: List[VehicleRoute], comment: Option[String], durationMinutes: Long)
 
   object AppConfig:

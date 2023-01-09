@@ -3,6 +3,7 @@ package distance
 import util.JsonUtils
 import zio.*
 import zio.json.*
+
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.{Duration, LocalDate, LocalDateTime}
@@ -18,7 +19,7 @@ object Model:
   case class OptimizationException(msg: String) extends Exception :
     override def getMessage: String = s"Optimization exception detected : $msg"
 
-  case class ExternalAPIException(msg: String ) extends Exception :
+  case class ExternalAPIException(msg: String) extends Exception :
     override def getMessage: String = s"External API exception detected : $msg"
 
   case class LocationEntity(index: Int, location: GeoLocation, name: String, uid: String, entityType: EntityType, weightInGramConstraint: Long)
@@ -32,7 +33,7 @@ object Model:
   case class Matrix(entities: List[LocationEntity], results: List[MatrixPosition])
 
   case class MatrixPosition(originIndex: Int, destinationIndex: Int, distanceMeters: Long, durationMinutes: Long)
-  
+
   case class FleetEntity(driverName: String, vehicleIdentification: String, capacityInGrams: Long)
 
   case class Solution(objectiveValue: Long, vehicleCount: Int, maxKmVehicle: Int, routes: List[Route], fleet: List[FleetEntity], comment: Option[String], durationMinutes: Long)

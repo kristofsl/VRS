@@ -6,6 +6,7 @@ import program.Main.AppConfig
 import util.JsonUtils.*
 import util.Utils.{buildLocationString, buildUri}
 import zio.*
+
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
 import java.time.temporal.ChronoUnit
@@ -16,7 +17,7 @@ import scala.collection.mutable.ArrayBuffer
 
 /** The trait description for the optimization services * */
 trait OptimizationService:
-  def optimize(input: Input, maxKmVehicle: Int, stopCountLimit: Int,secondsOptimizationLimit: Int): Task[Solution]
+  def optimize(input: Input, maxKmVehicle: Int, stopCountLimit: Int, secondsOptimizationLimit: Int): Task[Solution]
 
 /** The implementation for the Google OR tools */
 case class OrToolsOptimizationServiceImpl() extends OptimizationService :
@@ -70,7 +71,7 @@ case class OrToolsOptimizationServiceImpl() extends OptimizationService :
       result: Assignment <- ZIO.attempt(model.solveWithParameters(searchParams))
       objectiveValue: Option[Long] <- ZIO.attempt(if model.status() == 1 then Some(result.objectiveValue) else None)
       objectiveValue: Long <- ZIO.getOrFailWith(OptimizationException("Model solver did not succeed (status != 1)"))(objectiveValue)
-      routes: IndexedSeq[Route] <- ZIO.foreach(0 until input.fleet.length) {
+      routes: IndexedSeq[Route] <- ZIO.foreach(input.fleet.indices) {
         vehicleIndex => {
           collectSolutionForVehicle(vehicleIndex, input, model, manager, result, input.fleet)
         }
@@ -125,4 +126,4 @@ object OrToolsOptimizationServiceImpl:
 
 /** The clean API object */
 object OptimizationService:
-  def optimize(input: Input, maxKmVehicle: Int, stopCountLimit: Int,secondsOptimizationLimit: Int) = ZIO.serviceWithZIO[OptimizationService](_.optimize(input, maxKmVehicle, stopCountLimit, secondsOptimizationLimit))
+  def optimize(input: Input, maxKmVehicle: Int, stopCountLimit: Int, secondsOptimizationLimit: Int) = ZIO.serviceWithZIO[OptimizationService](_.optimize(input, maxKmVehicle, stopCountLimit, secondsOptimizationLimit))

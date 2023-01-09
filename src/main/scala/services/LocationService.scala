@@ -37,9 +37,9 @@ case class RadarLocationServiceImpl(appConfig: AppConfig) extends LocationServic
       appendLocation(temp + OR_URL + locations(0).latitude + "," + locations(0).longitude, locations.drop(1), false)
 
   def buildMapUrl(origins: List[GeoLocation], destinations: List[GeoLocation]): Task[String] =
-  // Sample request :
-  // curl "https://api.radar.io/v1/route/matrix?origins=40.78382,-73.97536&destinations=40.70390,-73.98690|40.73237,-73.94884&mode=car&units=imperial" \
-  // -H "Authorization: prj_live_pk_..."
+    // Sample request :
+    // curl "https://api.radar.io/v1/route/matrix?origins=40.78382,-73.97536&destinations=40.70390,-73.98690|40.73237,-73.94884&mode=car&units=imperial" \
+    // -H "Authorization: prj_live_pk_..."
     ZIO.attempt {
       val baseUrl = s"""$MAPS_URL$QUESTION_URL$ORIGINS_URL"""
       val urlWithOrigins = s"""${appendLocation(baseUrl, origins.toArray, true)}$AND_URL"""
