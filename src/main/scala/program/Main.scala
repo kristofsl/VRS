@@ -53,7 +53,6 @@ object Main extends ZIOAppDefault :
 
   def mainProgram(userInput: OptimizationInput): ZIO[AppConfig & LocationService & DataStructureBuildService & OptimizationService, Throwable, OptimalSolution] =
     for
-      _ <- ZIO.logDebug("Handling optimization request")
       locations <- ZIO.attempt {
         val locations: ArrayBuffer[LocationEntity] = ArrayBuffer()
         // add the depot
