@@ -4,7 +4,7 @@ import distance.Model.*
 import program.Main.AppConfig
 import program.Main.Vehicle
 import util.JsonUtils.*
-import util.Utils.{buildRelationShips, validateInput}
+import util.Utils.{buildRelationShips, validateInput,validateInputMatrix}
 import zio.*
 import java.net.http.*
 import java.net.{ConnectException, URI, URISyntaxException}
@@ -56,7 +56,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
 
   override def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]): Task[Input] =
     for
-    // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
+      // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
       datamatrix: Array[Array[Long]] <- ZIO.succeed(Array.ofDim[Long](dimension, dimension))
       datamatrixFull: Array[Array[Long]] <- ZIO.attempt {
         // fill the values and the opposite direction with the same value
@@ -64,6 +64,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
           datamatrix(mp.originIndex)(mp.destinationIndex) = mp.distanceMeters
           datamatrix(mp.destinationIndex)(mp.originIndex) = mp.distanceMeters
         }
+        assert(validateInputMatrix(datamatrix,0,0))
         datamatrix
       }
     yield (Input(fullMatrix = datamatrixFull, depotIndex = depotIndex, dataMatrix = input, demands = input.entities.map(_.weightInGramConstraint), fleet = vehicles.map(v => FleetEntity(v.driverName, v.vehicleIdentifier, v.capacityInGrams))))

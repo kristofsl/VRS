@@ -111,6 +111,15 @@ object UtilsTesting extends ZIOSpecDefault {
           LocationEntity(index = 1, location = GeoLocation(1.111112,1f), name = "0", uid = "1", entityType = EntityType.Customer, weightInGramConstraint = 1),
           LocationEntity(index = 2, location = GeoLocation(1.111113,1f), name = "2", uid = "2", entityType = EntityType.Depot, weightInGramConstraint = 0),
         )))(Assertion.equalTo(false))
+      },
+      test("validate matrix non zero diagonal") {
+        assert(Utils.validateInputMatrix(Array(Array(1l,2l,2l),Array(1l,0l,1l),Array(1l,2l,0l)),0,0))(Assertion.equalTo(false))
+      },
+      test("validate matrix zero on none diagonal") {
+        assert(Utils.validateInputMatrix(Array(Array(0l,1l,1l),Array(1l,0l,1l),Array(1l,0l,0l)),0,0))(Assertion.equalTo(false))
+      },
+      test("validate matrix ok") {
+        assert(Utils.validateInputMatrix(Array(Array(0l,1l,1l),Array(1l,0l,1l),Array(1l,1l,0l)),0,0))(Assertion.equalTo(true))
       }
     )
   )

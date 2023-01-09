@@ -32,6 +32,13 @@ object Utils:
     }
     result.toList.groupBy(_.index1)
 
+  def validateInputMatrix(m: Array[Array[Long]], row: Int, col: Int): Boolean =
+    if row == col && m(row)(col) == 0 then validateInputMatrix(m, row, col + 1)
+    else if row == col && m(row)(col) != 0 then false
+    else if col < m.length && row < m.length && m(row)(col) != 0 then validateInputMatrix(m, row, col + 1)
+    else if col < m.length && row < m.length && m(row)(col) == 0 then false
+    else if col == m.length && row < m.length then validateInputMatrix(m, row + 1, 0)
+    else true
 
   def validateInput(entities: List[LocationEntity]): Boolean =
     entities.length > 2

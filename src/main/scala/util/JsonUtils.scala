@@ -27,6 +27,7 @@ object JsonUtils:
 
   def parseMatrixResponse(jsonInput: String, origin: LocationEntity, destinations: List[LocationEntity], allEntities: List[LocationEntity]): Task[Matrix] =
       for
+        _ <- ZIO.logInfo(jsonInput)
         backendData:DistanceData        <- ZIO.attempt{jsonInput.fromJson[DistanceData] match
           case Left(e)  => throw ExternalAPIException(e)
           case Right(v) => v
