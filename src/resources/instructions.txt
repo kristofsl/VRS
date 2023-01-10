@@ -3,8 +3,8 @@ build:
 sbt reload / clean / compile
 sbt assembly
 
-docker build from macbook:
---------------------------
+docker build from macbook pro:
+------------------------------
 docker buildx build --platform linux/amd64 -f ./project/dockerfile -t zio-vrs:1.0 .
 docker run -d --name zio-vrs --restart unless-stopped -e "GEO_KEY=?" zio-vrs:1.0
 (replace ? with radar API key)
