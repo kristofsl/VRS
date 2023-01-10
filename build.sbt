@@ -13,7 +13,7 @@ libraryDependencies += "commons-validator" % "commons-validator" % "1.7"
 libraryDependencies += "dev.zio" %% "zio-test" % "2.0.5" % Test
 libraryDependencies += "dev.zio" %% "zio-test-sbt" % "2.0.5" % Test
 libraryDependencies += "dev.zio" %% "zio-test-magnolia" % "2.0.5" % Test
-libraryDependencies += "com.google.ortools" % "ortools-java" % "9.5.2237"
+libraryDependencies += "com.google.ortools" % "ortools-java" % "9.4.1874"
 libraryDependencies += "io.d11" %% "zhttp" % "2.0.0-RC11"
 libraryDependencies += "dev.zio" %% "zio-json" % "0.4.2"
 

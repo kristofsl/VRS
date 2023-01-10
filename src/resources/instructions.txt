@@ -1,5 +1,5 @@
 build:
------
+------
 sbt reload / clean / compile
 sbt assembly
 
@@ -13,13 +13,12 @@ gcloud auth configure-docker
 docker tag zio-vrs:1.0 gcr.io/bi-project-237314/zio-vrs:1.0
 docker push gcr.io/bi-project-237314/zio-vrs:1.0
 
-docker pull:
------------
+docker pull and run local docker:
+---------------------------------
 docker pull gcr.io/bi-project-237314/zio-vrs:1.0
 docker run -d --name zio-vrs --restart unless-stopped -e "GEO_KEY=?" gcr.io/bi-project-237314/zio-vrs:1.0
 (replace ? with radar API key)
 
 docker logs:
------------
+------------
 docker logs --tail 50 --follow --timestamps zio-vrs
-

@@ -14,7 +14,7 @@ import scala.collection.mutable.ArrayBuffer
 
 object Main extends ZIOAppDefault :
 
-  val port: Int = 8080
+  val port: Int = 80
 
   val app: Http[Any, Throwable, Request, Response] = Http.collectZIO[Request] {
     case req@Method.POST -> !! / "optimize" =>

@@ -24,7 +24,7 @@ trait DataStructureBuildService:
 case class DataStructureBuildServiceImpl(locationService: LocationService) extends DataStructureBuildService :
   override def build(entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
-    // build all needed relationships without including unneeded relationships that require no API calls
+      // build all needed relationships without including unneeded relationships that require no API calls
       relationships: Map[Int, List[LocationRelationCombination]] <- ZIO.cond(validateInput(entities), buildRelationShips(entities.length), InputException("Invalid input detected : at least 2 customers,  one depot is required, only valid latitude / longitudes are accepted and uid / geolocation should be unique"))
       // fetch all the results from the location service by calling the service with one origin and multiple destinations
       results: Iterable[Matrix] <- ZIO.foreach(relationships.keys) {
@@ -40,7 +40,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
 
   def fetchDataForOrigin(originIndex: Int, destinationIndexList: List[Int], entities: List[LocationEntity]): ZIO[LocationService & AppConfig, Throwable, Matrix] =
     for
-    // fetch the origin information from all the entities
+      // fetch the origin information from all the entities
       origin: LocationEntity <- ZIO.succeed(entities.filter(_.index == originIndex).last)
       // fetch the destinations information from all the entities
       destinations: List[LocationEntity] <- ZIO.succeed(entities.filter(l => destinationIndexList.contains(l.index)))
@@ -56,7 +56,7 @@ case class DataStructureBuildServiceImpl(locationService: LocationService) exten
 
   override def createInput(depotIndex: Int, input: Matrix, dimension: Int, vehicles: List[Vehicle]): Task[Input] =
     for
-    // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
+      // create multi dimensional array for all relationships and initialize with zeros (even the ones that require no API call)
       datamatrix: Array[Array[Long]] <- ZIO.succeed(Array.ofDim[Long](dimension, dimension))
       datamatrixFull: Array[Array[Long]] <- ZIO.attempt {
         // fill the values and the opposite direction with the same value
